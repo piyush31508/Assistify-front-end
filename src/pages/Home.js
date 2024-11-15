@@ -81,22 +81,27 @@ const Home = () => {
         </div>
       </div>
 
-      {
-        chats && chats.length === 0 ? "" :
-        <div className='fixed bottom-0 right-0 left-auto p-4 w-full md:w-3/4'>
-        <form onClick={submitHandler} className="flex justify-center items-center">
-          <input
-            className='flex-grow p-4 bg-gray-500 rounded-l text-white outline-none'
-            type="text"
-            placeholder='Enter a prompt here'
-            value={prompt}
-            onChange={e => setPrompt(e.target.value)}
-            required
-          />
-          <button className="p-4 bg-gray-600 rounded-r text-2xl text-white"><IoMdSend /></button>
-        </form>
-      </div>
-      }
+      { 
+  !isOpen && chats && chats.length === 0 ? null : 
+  !isOpen && (
+    <div className='fixed bottom-0 right-0 left-auto p-4 w-full md:w-3/4'>
+      <form onClick={submitHandler} className="flex justify-center items-center">
+        <input
+          className='flex-grow p-4 bg-gray-500 rounded-l text-white outline-none'
+          type="text"
+          placeholder='Enter a prompt here'
+          value={prompt}
+          onChange={e => setPrompt(e.target.value)}
+          required
+        />
+        <button className="p-4 bg-gray-600 rounded-r text-2xl text-white">
+          <IoMdSend />
+        </button>
+      </form>
+    </div>
+  )
+}
+
     </div>
   )
 }

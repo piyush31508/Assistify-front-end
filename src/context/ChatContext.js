@@ -12,10 +12,11 @@ export const ChatProvider = ({ children }) => {
 
     async function fetchResponse() {
        
-        console.log("API Key:", process.env.REACT_APP_KEY);
-        setNewRequestLoading(true);
-        setPrompt("");
         try {
+            if(prompt === "")
+                return;
+            setNewRequestLoading(true);
+
             const response = await axios({
                 url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=AIzaSyAdDe9F6B-21MQ-RqbeEAZ7QrXuSKbtZXo`,
                 method: "post",
@@ -23,6 +24,8 @@ export const ChatProvider = ({ children }) => {
                     contents: [{ parts: [{ text: prompt }] }]
                 }
             });
+
+            setPrompt("");
 
             const message = {
                 question: prompt,
@@ -88,7 +91,7 @@ export const ChatProvider = ({ children }) => {
 
     const [loading, setLoading] = useState(false);
 
-    const fetchMessages = useCallback(async () => {
+    const fetchMessages = async () => {
         setLoading(true);
         if (!selected) return;
         setLoading(true);
@@ -111,7 +114,7 @@ export const ChatProvider = ({ children }) => {
         } finally {
             setLoading(false);
         }   
-    }, [selected]);
+    };
 
     async function deleteChat(id){
         try {
@@ -135,11 +138,10 @@ export const ChatProvider = ({ children }) => {
 
 
     useEffect(() => {
-        if (selected) {
+        if (selected !== null) {
             fetchMessages();
         }
-    }, [selected, fetchMessages]);
-    
+    }, [selected]);
 
     return (
         <ChatContext.Provider value={{
