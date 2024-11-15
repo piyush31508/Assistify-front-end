@@ -3,6 +3,7 @@ import { MdDelete } from "react-icons/md";
 import { LoadingSpinner } from "./Loading";
 import toast from "react-hot-toast";
 import { UserData } from "../context/UserContext";
+import { useNavigate } from "react-router-dom";
 
 const SideBar = ({ isOpen, toggleSideBar }) => {
     const { Logout } = UserData();
@@ -20,7 +21,11 @@ const SideBar = ({ isOpen, toggleSideBar }) => {
         }
     };
 
-    
+    const navigate = useNavigate();  
+    const handleLogout = () => {
+        Logout(navigate); 
+    };
+
     return (
         <div className={`text-white fixed inset-0 bg-gray-800 p-2 transition-transform
             transform md:relative md:translate-x-0 md:w-1/4 md:block
@@ -73,7 +78,7 @@ const SideBar = ({ isOpen, toggleSideBar }) => {
             <div className="absolute bottom-0 mb-6 w-full">
                 <button className="px-2 py-2 bg-black hover:bg-gray-500 hover:text-black rounded text-xl
                     mt-2 flex justify-center items-center"
-                    onClick={Logout}
+                    onClick={handleLogout}
                 >
                     Logout
                 </button>

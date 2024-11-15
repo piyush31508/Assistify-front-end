@@ -7,7 +7,7 @@ import { UserProvider } from './context/UserContext.js'
 import { ChatProvider } from './context/ChatContext.js';
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
-export const server = 'http://localhost:8000';
+export const server = 'https://assistify-backend.onrender.com';
 
 root.render(
   <React.StrictMode>
