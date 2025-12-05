@@ -64,7 +64,10 @@ const SideBar = ({ isOpen, toggleSideBar }) => {
 
                 
                 <button 
-                    onClick={createChat}
+                    onClick={async () => {
+                        await createChat();
+                        if (window.innerWidth < 768) toggleSideBar();
+                        }}
                     disabled={createLod}
                     className="w-full mb-6 px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 
                     hover:from-blue-500 hover:to-purple-500 rounded-xl font-medium
