@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { server } from "../index.js";
@@ -6,7 +6,6 @@ import { server } from "../index.js";
 const ChatContext = createContext();
 
 export const ChatProvider = ({ children }) => {
-
   const [messages, setMessages] = useState([]);
   const [prompt, setPrompt] = useState("");
   const [newRequestLoading, setNewRequestLoading] = useState(false);
@@ -17,9 +16,6 @@ export const ChatProvider = ({ children }) => {
   const [createLod, setCreateLod] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // =========================================================
-  // 🔥 FETCH RESPONSE (now talks to BACKEND Only)
-  // =========================================================
   const fetchResponse = async () => {
     try {
       if (!prompt.trim()) return;
@@ -34,10 +30,9 @@ export const ChatProvider = ({ children }) => {
         return;
       }
 
-      // Call BACKEND instead of OpenRouter directly
       const { data } = await axios.post(
         `${server}/chat/${selected}`,
-        { question: currentPrompt }, // ❗only question — backend generates answer
+        { question: currentPrompt },
         {
           headers: { token: localStorage.getItem("token") },
         }
@@ -51,50 +46,70 @@ export const ChatProvider = ({ children }) => {
       };
 
       setMessages((prev) => [...prev, message]);
+      
+      // Update chat list to reflect latest message
+      setChats(prevChats => 
+        prevChats.map(chat => 
+          chat._id === selected 
+            ? { ...chat, latestMessage: currentPrompt }
+            : chat
+        )
+      );
+      
       setNewRequestLoading(false);
     } catch (error) {
       console.error("Backend error:", error);
-      toast.error("Failed to generate response");
+      toast.error(error.response?.data?.message || "Failed to generate response");
       setNewRequestLoading(false);
     }
   };
 
-  // =========================================================
-  // 🔥 FETCH ALL CHATS
-  // =========================================================
+
   async function fetchChats() {
-    try {
-      const { data } = await axios.get(`${server}/chat/all`, {
-        headers: { token: localStorage.getItem("token") },
-      });
+  const token = localStorage.getItem("token");
+  if (!token) return;
 
-      setChats(data);
+  try {
+    const { data } = await axios.get(`${server}/chat/all`, {
+      headers: { token },
+    });
 
-      if (data.length > 0) {
-        setSelected(data[0]._id);
-      }
-    } catch (error) {
-      console.log(error);
+    setChats(data);
+
+    if (data.length > 0 && !selected) {
+      setSelected(data[0]._id);
     }
-  }
+  } catch (error) {
+    console.error("Error fetching chats:", error);
 
-  // =========================================================
-  // 🔥 CREATE NEW CHAT
-  // =========================================================
+    // If token is invalid/expired, let fetchUser handle the toast
+    if (error.response?.status === 401) {
+      return;
+    }
+
+    toast.error("Failed to load chats");
+  }
+}
+
+
   async function createChat() {
     setCreateLod(true);
     try {
-      await axios.post(
+      const { data } = await axios.post(
         `${server}/chat/new`,
         {},
         { headers: { token: localStorage.getItem("token") } }
       );
 
-      await fetchChats();
+      // Add the new chat and select it
+      const newChat = data.chat || data;
+      setChats(prev => [newChat, ...prev]);
+      setSelected(newChat._id);
+      setMessages([]); // Clear messages for new chat
       setCreateLod(false);
       toast.success("New chat created");
     } catch (error) {
-      console.log(error);
+      console.error("Error creating chat:", error);
       setCreateLod(false);
       toast.error("Failed to create chat");
     }
@@ -109,42 +124,51 @@ export const ChatProvider = ({ children }) => {
         headers: { token: localStorage.getItem("token") },
       });
 
-      if (data.message === "No conversation found") {
+      if (data.message === "No conversation found" || !data || data.length === 0) {
         setMessages([]);
       } else {
         setMessages(data);
       }
     } catch (error) {
-      console.error(error);
-      if (error.response?.data?.message !== "No conversation found") {
-        toast.error("Something went wrong while fetching messages");
+      console.error("Error fetching messages:", error);
+      if (error.response?.status === 404 || error.response?.data?.message === "No conversation found") {
+        setMessages([]);
+      } else {
+        toast.error("Failed to load messages");
       }
     } finally {
       setLoading(false);
     }
   };
 
-  // =========================================================
-  // 🔥 DELETE CHAT
-  // =========================================================
+
   async function deleteChat(id) {
     try {
-      const { data } = await axios.delete(`${server}/chat/${id}`, {
+      await axios.delete(`${server}/chat/${id}`, {
         headers: { token: localStorage.getItem("token") },
       });
 
-      toast.success(data.message);
-      await fetchChats();
-      window.location.reload();
+      // Remove chat from state
+      const updatedChats = chats.filter(chat => chat._id !== id);
+      setChats(updatedChats);
+
+      // If deleted chat was selected, clear messages and select another chat
+      if (selected === id) {
+        setMessages([]);
+        if (updatedChats.length > 0) {
+          setSelected(updatedChats[0]._id);
+        } else {
+          setSelected(null);
+        }
+      }
+
+      toast.success("Chat deleted successfully");
     } catch (error) {
-      console.log(error);
-      alert("Failed to delete chat");
+      console.error("Error deleting chat:", error);
+      toast.error("Failed to delete chat");
     }
   }
 
-  // =========================================================
-  // RUN ON START
-  // =========================================================
   useEffect(() => {
     fetchChats();
   }, []);
@@ -152,6 +176,8 @@ export const ChatProvider = ({ children }) => {
   useEffect(() => {
     if (selected !== null) {
       fetchMessages();
+    } else {
+      setMessages([]);
     }
   }, [selected]);
 
